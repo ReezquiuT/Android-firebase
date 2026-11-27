@@ -1,6 +1,7 @@
 package io.devexpert.android_firebase.ui.screens.auth
 
 import android.content.Context
+import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -117,21 +118,31 @@ fun SignUpScreen(analytics: AnalyticsManager, auth: AuthManager, navigation: Nav
     }
 }
 
+private const val MIN_PASSWORD_LENGTH = 6
+
 private suspend fun signUp(email: String, password: String, auth: AuthManager, analytics: AnalyticsManager, context: Context, navigation: NavController) {
-    if(email.isNotEmpty() && password.isNotEmpty()) {
-        when(val result = auth.createUserWithEmailAndPassword(email, password)) {
-            is AuthRes.Success -> {
-                analytics.logButtonClicked(FirebaseAnalytics.Event.SIGN_UP)
-                Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-                navigation.popBackStack()
-            }
-            is AuthRes.Error -> {
-                analytics.logButtonClicked("Error SignUp: ${result.errorMessage}")
-                Toast.makeText(context, "Error SignUp: ${result.errorMessage}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    } else {
+    if(email.isEmpty() || password.isEmpty()) {
         Toast.makeText(context, "Existen campos vacios", Toast.LENGTH_SHORT).show()
+        return
+    }
+    if(!Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+        Toast.makeText(context, "El correo electrónico no es válido", Toast.LENGTH_SHORT).show()
+        return
+    }
+    if(password.length < MIN_PASSWORD_LENGTH) {
+        Toast.makeText(context, "La contraseña debe tener al menos $MIN_PASSWORD_LENGTH caracteres", Toast.LENGTH_SHORT).show()
+        return
+    }
+    when(val result = auth.createUserWithEmailAndPassword(email.trim(), password)) {
+        is AuthRes.Success -> {
+            analytics.logButtonClicked(FirebaseAnalytics.Event.SIGN_UP)
+            Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
+            navigation.popBackStack()
+        }
+        is AuthRes.Error -> {
+            analytics.logButtonClicked("Error SignUp: ${result.errorMessage}")
+            Toast.makeText(context, "Error SignUp: ${result.errorMessage}", Toast.LENGTH_SHORT).show()
+        }
     }
 }
 
